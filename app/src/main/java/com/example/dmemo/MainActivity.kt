@@ -105,7 +105,7 @@ fun DmemoApp() {
             .fillMaxSize()
             .padding(top = 72.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
-        Text("冬冬备忘", style = MaterialTheme.typography.headlineMedium)
+        Text("备忘冬冬", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
         
         // 选择模式的操作栏
