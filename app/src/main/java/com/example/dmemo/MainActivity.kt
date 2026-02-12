@@ -97,6 +97,9 @@ fun DmemoApp() {
             selectedIndexes.clear()
             // 保存到文件
             saveAllMemos(context, memos.toList())
+            // 重新加载备忘录列表以确保 UI 更新
+            memos.clear()
+            memos.addAll(loadMemos(context))
         }
     }
     
