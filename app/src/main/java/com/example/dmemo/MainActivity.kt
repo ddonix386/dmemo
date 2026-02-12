@@ -78,10 +78,13 @@ fun DmemoApp() {
             // 读取当前文件内容（原始顺序）
             val allMemos = loadMemos(context)
             
-            // 构建要保留的索引集合（排除选中的）
-            val indexesToKeep = allMemos.indices.filter { it !in selectedIndexes }
+            // 将 selectedIndexes 转为 Set 以提高 !in 操作的稳定性
+            val selectedSet = selectedIndexes.toSet()
             
-            // 保存要保留的备忘录
+            // 构建要保留的索引列表（排除选中的）
+            val indexesToKeep = allMemos.indices.filter { it !in selectedSet }
+            
+            // 保存要保留的备忘录（覆盖原文件）
             val memoFile = File(context.filesDir, "memos.txt")
             FileWriter(memoFile, false).use { writer ->
                 indexesToKeep.forEach { index ->
@@ -187,7 +190,7 @@ fun DmemoApp() {
             
             LazyColumn {
                 items(sortedMemos.size) { index ->
-                    // 获取实际的索引
+                    // 获取实际的索引（基于原始列表 memos 的顺序）
                     val actualIndex = if (showNewestFirst) {
                         memos.size - 1 - index
                     } else {
@@ -198,6 +201,7 @@ fun DmemoApp() {
                         isSelected = selectedIndexes.contains(actualIndex),
                         onSelect = {
                             if (isSelecting) {
+                                // 使用 contains 检查后再 remove/add，避免并发修改异常
                                 if (selectedIndexes.contains(actualIndex)) {
                                     selectedIndexes.remove(actualIndex)
                                 } else {
