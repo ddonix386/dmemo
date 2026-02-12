@@ -74,16 +74,6 @@ fun DmemoApp() {
     
     // 删除选中的备忘录
     fun deleteSelected() {
-        // 保存所有备忘录
-        fun saveAllMemos(context: Context, memoList: List<String>) {
-            val memoFile = File(context.filesDir, "memos.txt")
-            FileWriter(memoFile, false).use { writer ->
-                memoList.forEach { memo ->
-                    writer.write("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())} - $memo\n")
-                }
-            }
-        }
-        
         if (selectedIndexes.isNotEmpty()) {
             // 按索引从大到小排序，避免删除时索引错乱
             val sortedIndexes = selectedIndexes.sortedDescending()
@@ -95,8 +85,15 @@ fun DmemoApp() {
             }
             // 清空选中列表
             selectedIndexes.clear()
+            
             // 保存到文件
-            saveAllMemos(context, memos.toList())
+            val memoFile = File(context.filesDir, "memos.txt")
+            FileWriter(memoFile, false).use { writer ->
+                memos.forEach { memo ->
+                    writer.write("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())} - $memo\n")
+                }
+            }
+            
             // 重新加载备忘录列表以确保 UI 更新
             memos.clear()
             memos.addAll(loadMemos(context))
