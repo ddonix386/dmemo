@@ -74,27 +74,34 @@ fun DmemoApp() {
     
     // 删除选中的备忘录
     fun deleteSelected() {
-        if (selectedIndexes.isNotEmpty()) {
-            // 读取当前文件内容（原始顺序）
-            val allMemos = loadMemos(context)
-            
-            // 将 selectedIndexes 转为 Set 以提高 !in 操作的稳定性
-            val selectedSet = selectedIndexes.toSet()
-            
-            // 构建要保留的索引列表（排除选中的）
-            val indexesToKeep = allMemos.indices.filter { it !in selectedSet }
-            
-            // 保存要保留的备忘录（覆盖原文件）
+        // 保存所有备忘录
+        fun saveAllMemos(context: Context, memoList: List<String>) {
             val memoFile = File(context.filesDir, "memos.txt")
-            FileWriter(memoFile, false).use { writer ->
-                indexesToKeep.forEach { index ->
-                    writer.write(allMemos[index] + "\n")
+            try {
+                FileWriter(memoFile, false).use { writer ->
+                    memoList.forEach { memo ->
+                        writer.write("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())} - $memo\n")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
+        if (selectedIndexes.isNotEmpty()) {
+            // 按索引从大到小排序，避免删除时索引错乱
+            val sortedIndexes = selectedIndexes.sortedDescending()
+            // 删除对应的备忘录
+            sortedIndexes.forEach { index ->
+                if (index >= 0 && index < memos.size) {
+                    memos.removeAt(index)
                 }
             }
-            
-            // 清空并重新加载
+            // 清空选中列表
             selectedIndexes.clear()
-            isSelecting = false
+            // 保存到文件
+            saveAllMemos(context, memos.toList())
+            // 重新加载备忘录列表以确保 UI 更新
             memos.clear()
             memos.addAll(loadMemos(context))
         }
@@ -190,7 +197,7 @@ fun DmemoApp() {
             
             LazyColumn {
                 items(sortedMemos.size) { index ->
-                    // 获取实际的索引（基于原始列表 memos 的顺序）
+                    // 获取实际的索引
                     val actualIndex = if (showNewestFirst) {
                         memos.size - 1 - index
                     } else {
@@ -201,7 +208,6 @@ fun DmemoApp() {
                         isSelected = selectedIndexes.contains(actualIndex),
                         onSelect = {
                             if (isSelecting) {
-                                // 使用 contains 检查后再 remove/add，避免并发修改异常
                                 if (selectedIndexes.contains(actualIndex)) {
                                     selectedIndexes.remove(actualIndex)
                                 } else {
