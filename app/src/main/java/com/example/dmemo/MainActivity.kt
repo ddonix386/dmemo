@@ -97,13 +97,14 @@ fun DmemoApp() {
                     memos.removeAt(index)
                 }
             }
-            // 清空选中列表
-            selectedIndexes.clear()
             // 保存到文件
             saveAllMemos(context, memos.toList())
             // 重新加载备忘录列表以确保 UI 更新
             memos.clear()
             memos.addAll(loadMemos(context))
+            // 清空选中列表并退出选择模式
+            selectedIndexes.clear()
+            isSelecting = false
         }
     }
     
@@ -135,8 +136,8 @@ fun DmemoApp() {
                 Text("全选")
                 Button(onClick = {
                     // 显示确认对话框
-                    selectedIndexes.clear()
-                    isSelecting = false
+                    // selectedIndexes.clear()  // 已注释：否则无法删除
+                    // isSelecting = false      // 已注释：否则无法删除
                     deleteSelected()
                 }) {
                     Text("删除")
