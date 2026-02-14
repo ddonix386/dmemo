@@ -35,15 +35,41 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// 分组数据类
+data class MemoGroup(
+    val name: String,
+    val color: Int
+)
+
+// 备忘录数据类
+data class MemoItemData(
+    val id: Long,
+    val content: String,
+    val group: String,
+    val timestamp: Long
+)
+
 @Composable
 fun DmemoApp() {
     val context = LocalContext.current
-    // 使用 mutableStateOf 来存储备忘录列表，这样添加后会自动刷新
-    val memos = remember { mutableStateListOf<String>() }
+    
+    // 分组列表（可扩展）
+    val groups = listOf(
+        MemoGroup("默认", 0xFFE0E0E0.toInt()),
+        MemoGroup("工作", 0xFFBBDEFB.toInt()),
+        MemoGroup("生活", 0xFFC8E6C9.toInt()),
+        MemoGroup("学习", 0xFFF0F4C3.toInt()),
+        MemoGroup("购物", 0xFFFFCDD2.toInt())
+    )
+    
+    // 使用 mutableStateOf 来存储备忘录列表
+    val memos = remember { mutableStateListOf<MemoItemData>() }
     var newMemoText by remember { mutableStateOf("") }
-    var showNewestFirst by remember { mutableStateOf(true) } // 默认最新的在最上面
-    var isSelecting by remember { mutableStateOf(false) } // 是否在选择模式
-    val selectedIndexes = remember { mutableStateListOf<Int>() } // 选中的索引列表
+    var selectedGroup by remember { mutableStateOf(groups[0].name) } // 默认分组
+    var showNewestFirst by remember { mutableStateOf(true) }
+    var isSelecting by remember { mutableStateOf(false) }
+    val selectedIndexes = remember { mutableStateListOf<Int>() }
+    var dropdownExpanded by remember { mutableStateOf(false) }
     
     // 当组件首次显示时加载备忘录
     LaunchedEffect(Unit) {
@@ -54,7 +80,7 @@ fun DmemoApp() {
     // 添加备忘录的函数
     fun addMemo() {
         if (newMemoText.isNotBlank()) {
-            saveMemo(context, newMemoText)
+            saveMemo(context, newMemoText, selectedGroup)
             // 重新加载备忘录列表
             memos.clear()
             memos.addAll(loadMemos(context))
@@ -74,13 +100,12 @@ fun DmemoApp() {
     
     // 删除选中的备忘录
     fun deleteSelected() {
-        // 保存所有备忘录
-        fun saveAllMemos(context: Context, memoList: List<String>) {
+        fun saveAllMemos(context: Context, memoList: List<MemoItemData>) {
             val memoFile = File(context.filesDir, "memos.txt")
             try {
                 FileWriter(memoFile, false).use { writer ->
                     memoList.forEach { memo ->
-                        writer.write("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())} - $memo\n")
+                        writer.write("${memo.timestamp}|${memo.group}|${memo.content}\n")
                     }
                 }
             } catch (e: Exception) {
@@ -89,20 +114,15 @@ fun DmemoApp() {
         }
         
         if (selectedIndexes.isNotEmpty()) {
-            // 按索引从大到小排序，避免删除时索引错乱
             val sortedIndexes = selectedIndexes.sortedDescending()
-            // 删除对应的备忘录
             sortedIndexes.forEach { index ->
                 if (index >= 0 && index < memos.size) {
                     memos.removeAt(index)
                 }
             }
-            // 保存到文件
             saveAllMemos(context, memos.toList())
-            // 重新加载备忘录列表以确保 UI 更新
             memos.clear()
             memos.addAll(loadMemos(context))
-            // 清空选中列表并退出选择模式
             selectedIndexes.clear()
             isSelecting = false
         }
@@ -135,9 +155,6 @@ fun DmemoApp() {
                 )
                 Text("全选")
                 Button(onClick = {
-                    // 显示确认对话框
-                    // selectedIndexes.clear()  // 已注释：否则无法删除
-                    // isSelecting = false      // 已注释：否则无法删除
                     deleteSelected()
                 }) {
                     Text("删除")
@@ -146,25 +163,59 @@ fun DmemoApp() {
             Spacer(modifier = Modifier.height(8.dp))
         }
         
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextField(
-                value = newMemoText,
-                onValueChange = { newMemoText = it },
-                label = { Text("添加备忘录") },
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        addMemo()
-                    }
+        // 添加备忘录区域
+        Column {
+            // 分组选择器
+            ExposedDropdownMenuBox(
+                expanded = dropdownExpanded,
+                onExpandedChange = { dropdownExpanded = !dropdownExpanded }
+            ) {
+                TextField(
+                    value = selectedGroup,
+                    onValueChange = { },
+                    label = { Text("分组") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                        .padding(bottom = 8.dp),
+                    readOnly = true
                 )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = { addMemo() }) {
-                Text("添加")
+                ExposedDropdownMenu(
+                    expanded = dropdownExpanded,
+                    onDismissRequest = { dropdownExpanded = false }
+                ) {
+                    groups.forEach { group ->
+                        DropdownMenuItem(
+                            text = { Text(group.name) },
+                            onClick = {
+                                selectedGroup = group.name
+                                dropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextField(
+                    value = newMemoText,
+                    onValueChange = { newMemoText = it },
+                    label = { Text("添加备忘录") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            addMemo()
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { addMemo() }) {
+                    Text("添加")
+                }
             }
         }
         
@@ -189,16 +240,14 @@ fun DmemoApp() {
         if (memos.isEmpty()) {
             Text("暂无备忘录", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
         } else {
-            // 根据显示顺序决定排序方式
             val sortedMemos = if (showNewestFirst) {
-                memos.asReversed() // 最新的在最上面
+                memos.asReversed()
             } else {
-                memos.toList() // 最旧的在最上面
+                memos.toList()
             }
             
             LazyColumn {
                 items(sortedMemos.size) { index ->
-                    // 获取实际的索引
                     val actualIndex = if (showNewestFirst) {
                         memos.size - 1 - index
                     } else {
@@ -215,7 +264,6 @@ fun DmemoApp() {
                                     selectedIndexes.add(actualIndex)
                                 }
                             } else {
-                                // 进入选择模式
                                 isSelecting = true
                                 selectedIndexes.clear()
                                 selectedIndexes.add(actualIndex)
@@ -230,7 +278,7 @@ fun DmemoApp() {
 
 @Composable
 fun MemoItem(
-    memo: String,
+    memo: MemoItemData,
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
@@ -251,26 +299,50 @@ fun MemoItem(
             if (isSelected) {
                 Checkbox(
                     checked = isSelected,
-                    onCheckedChange = null // 只能通过点击卡片来切换
+                    onCheckedChange = null
                 )
             }
-            Text(memo)
+            Column {
+                Text(memo.content)
+                Text(
+                    "${memo.group} | ${SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(memo.timestamp))}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
         }
     }
 }
 
-fun loadMemos(context: Context): List<String> {
+fun loadMemos(context: Context): List<MemoItemData> {
     val memoFile = File(context.filesDir, "memos.txt")
     return if (memoFile.exists()) {
-        memoFile.readLines(charset = Charsets.UTF_8)
+        memoFile.readLines(charset = Charsets.UTF_8).map { line ->
+            val parts = line.split("|", limit = 3)
+            if (parts.size >= 3) {
+                MemoItemData(
+                    id = System.currentTimeMillis(),
+                    content = parts[2],
+                    group = parts[1],
+                    timestamp = parts[0].toLongOrNull() ?: System.currentTimeMillis()
+                )
+            } else {
+                MemoItemData(
+                    id = System.currentTimeMillis(),
+                    content = line,
+                    group = "默认",
+                    timestamp = System.currentTimeMillis()
+                )
+            }
+        }
     } else {
         emptyList()
     }
 }
 
-fun saveMemo(context: Context, memo: String) {
+fun saveMemo(context: Context, memo: String, group: String) {
     val memoFile = File(context.filesDir, "memos.txt")
     FileWriter(memoFile, true).use { writer ->
-        writer.write("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())} - $memo\n")
+        writer.write("${System.currentTimeMillis()}|$group|$memo\n")
     }
 }
