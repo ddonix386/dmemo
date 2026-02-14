@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.dmemo.data.GroupRepository
+import com.example.dmemo.data.GroupType
 import com.example.dmemo.ui.screens.GroupManagementScreen
 import com.example.dmemo.ui.theme.DmemoTheme
 import java.io.*
@@ -82,6 +83,10 @@ fun MainScreen(
     var isSelecting by remember { mutableStateOf(false) }
     val selectedIndexes = remember { mutableStateListOf<Int>() }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var showNumberError by remember { mutableStateOf(false) }
+    
+    // 获取当前分组的数据类型
+    val currentGroupType = groupRepository.groups.find { it.name == selectedGroup }?.type ?: GroupType.TEXT
     
     // 当组件首次显示时加载备忘录
     LaunchedEffect(Unit) {
@@ -92,11 +97,27 @@ fun MainScreen(
     // 添加备忘录的函数
     fun addMemo() {
         if (newMemoText.isNotBlank()) {
-            saveMemo(context, newMemoText, selectedGroup)
-            // 重新加载备忘录列表
-            memos.clear()
-            memos.addAll(loadMemos(context))
-            newMemoText = ""
+            // 如果分组是数字类型，检查输入是否为数字
+            if (currentGroupType == GroupType.NUMBER) {
+                try {
+                    newMemoText.toDouble()
+                    saveMemo(context, newMemoText, selectedGroup)
+                    // 重新加载备忘录列表
+                    memos.clear()
+                    memos.addAll(loadMemos(context))
+                    newMemoText = ""
+                    showNumberError = false
+                } catch (e: Exception) {
+                    showNumberError = true
+                }
+            } else {
+                saveMemo(context, newMemoText, selectedGroup)
+                // 重新加载备忘录列表
+                memos.clear()
+                memos.addAll(loadMemos(context))
+                newMemoText = ""
+                showNumberError = false
+            }
         }
     }
     
@@ -230,12 +251,22 @@ fun MainScreen(
                         onDone = {
                             addMemo()
                         }
-                    )
+                    ),
+                    isError = showNumberError
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = { addMemo() }) {
                     Text("添加")
                 }
+            }
+            
+            // 数字格式错误提示
+            if (showNumberError && currentGroupType == GroupType.NUMBER) {
+                Text(
+                    "请输入数字格式",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
         
