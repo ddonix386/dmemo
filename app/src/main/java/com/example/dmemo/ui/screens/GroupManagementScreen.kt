@@ -26,7 +26,7 @@ fun GroupManagementScreen(
     var newGroupName by remember { mutableStateOf("") }
     var editingGroup by remember { mutableStateOf<MemoGroup?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -54,7 +54,7 @@ fun GroupManagementScreen(
                     GroupItem(
                         group = group,
                         isDefault = group.name == "默认",
-                        onEdit = { editingGroup = group },
+                        onRename = { editingGroup = group },
                         onDelete = { if (group.name != "默认") groupRepository.deleteGroup(group.name) }
                     )
                 }
@@ -116,23 +116,23 @@ fun GroupManagementScreen(
         )
     }
 
-    // 编辑分组对话框
-    if (showEditDialog && editingGroup != null && editingGroup!!.name != "默认") {
-        val editGroupName = remember { mutableStateOf(editingGroup!!.name) }
+    // 改名对话框
+    if (showRenameDialog && editingGroup != null && editingGroup!!.name != "默认") {
+        val renameGroupName = remember { mutableStateOf(editingGroup!!.name) }
         AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text("编辑分组") },
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("改名") },
             text = {
                 TextField(
-                    value = editGroupName.value,
-                    onValueChange = { editGroupName.value = it },
-                    label = { Text("分组名称") },
+                    value = renameGroupName.value,
+                    onValueChange = { renameGroupName.value = it },
+                    label = { Text("新分组名称") },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if (editGroupName.value.isNotBlank() && !groupRepository.groupExists(editGroupName.value)) {
-                                groupRepository.updateGroup(editingGroup!!.name, editGroupName.value)
-                                showEditDialog = false
+                            if (renameGroupName.value.isNotBlank() && !groupRepository.groupExists(renameGroupName.value)) {
+                                groupRepository.updateGroup(editingGroup!!.name, renameGroupName.value)
+                                showRenameDialog = false
                             }
                         }
                     ),
@@ -142,9 +142,9 @@ fun GroupManagementScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (editGroupName.value.isNotBlank() && !groupRepository.groupExists(editGroupName.value)) {
-                            groupRepository.updateGroup(editingGroup!!.name, editGroupName.value)
-                            showEditDialog = false
+                        if (renameGroupName.value.isNotBlank() && !groupRepository.groupExists(renameGroupName.value)) {
+                            groupRepository.updateGroup(editingGroup!!.name, renameGroupName.value)
+                            showRenameDialog = false
                         }
                     }
                 ) {
@@ -152,7 +152,7 @@ fun GroupManagementScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
+                TextButton(onClick = { showRenameDialog = false }) {
                     Text("取消")
                 }
             }
@@ -164,7 +164,7 @@ fun GroupManagementScreen(
 fun GroupItem(
     group: MemoGroup,
     isDefault: Boolean,
-    onEdit: () -> Unit,
+    onRename: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -172,7 +172,7 @@ fun GroupItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable { if (!isDefault) onEdit() }
+            .clickable { if (!isDefault) onRename() }
     ) {
         Row(
             modifier = Modifier
@@ -193,8 +193,8 @@ fun GroupItem(
             }
             Row {
                 if (!isDefault) {
-                    TextButton(onClick = onEdit) {
-                        Text("编辑")
+                    TextButton(onClick = onRename) {
+                        Text("改名")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = onDelete) {
