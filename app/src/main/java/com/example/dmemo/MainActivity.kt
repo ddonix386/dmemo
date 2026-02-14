@@ -14,6 +14,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,6 +89,7 @@ fun MainScreen(
     val selectedIndexes = remember { mutableStateListOf<Int>() }
     var dropdownExpanded by remember { mutableStateOf(false) }
     var showNumberError by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
     
     // 获取当前分组的数据类型
     val currentGroupType = groupRepository.groups.find { it.name == selectedGroup }?.type ?: GroupType.TEXT
@@ -173,8 +177,48 @@ fun MainScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("冬冬备忘", style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = onNavigateToGroups) {
-                Text("分组管理")
+            ExposedDropdownMenuBox(
+                expanded = menuExpanded,
+                onExpandedChange = { menuExpanded = !menuExpanded }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { menuExpanded = !menuExpanded }
+                        .padding(end = 16.dp)
+                ) {
+                    Text("分组管理")
+                    Icon(
+                        imageVector = if (menuExpanded) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
+                        contentDescription = null
+                    )
+                }
+                ExposedDropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("分组管理") },
+                        onClick = {
+                            menuExpanded = false
+                            onNavigateToGroups()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("关于") },
+                        onClick = {
+                            menuExpanded = false
+                            // TODO: 打开关于页面
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("设置") },
+                        onClick = {
+                            menuExpanded = false
+                            // TODO: 打开设置页面
+                        }
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
