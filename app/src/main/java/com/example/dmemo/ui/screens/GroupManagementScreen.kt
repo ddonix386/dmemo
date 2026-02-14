@@ -250,6 +250,11 @@ fun GroupItem(
         ) {
             Column {
                 Text(group.name)
+                Text(
+                    if (group.type == GroupType.NUMBER) "数字格式" else "文本格式",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
                 if (isDefault) {
                     Text(
                         "默认分组，不可删除或修改",
