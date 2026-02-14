@@ -27,6 +27,7 @@ fun GroupManagementScreen(
     var editingGroup by remember { mutableStateOf<MemoGroup?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var renameGroupName by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -54,7 +55,11 @@ fun GroupManagementScreen(
                     GroupItem(
                         group = group,
                         isDefault = group.name == "默认",
-                        onRename = { editingGroup = group },
+                        onRename = {
+                            editingGroup = group
+                            renameGroupName = group.name
+                            showRenameDialog = true
+                        },
                         onDelete = { if (group.name != "默认") groupRepository.deleteGroup(group.name) }
                     )
                 }
@@ -118,20 +123,19 @@ fun GroupManagementScreen(
 
     // 改名对话框
     if (showRenameDialog && editingGroup != null && editingGroup!!.name != "默认") {
-        val renameGroupName = remember { mutableStateOf(editingGroup!!.name) }
         AlertDialog(
             onDismissRequest = { showRenameDialog = false },
             title = { Text("改名") },
             text = {
                 TextField(
-                    value = renameGroupName.value,
-                    onValueChange = { renameGroupName.value = it },
+                    value = renameGroupName,
+                    onValueChange = { renameGroupName = it },
                     label = { Text("新分组名称") },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            if (renameGroupName.value.isNotBlank() && !groupRepository.groupExists(renameGroupName.value)) {
-                                groupRepository.updateGroup(editingGroup!!.name, renameGroupName.value)
+                            if (renameGroupName.isNotBlank() && !groupRepository.groupExists(renameGroupName)) {
+                                groupRepository.updateGroup(editingGroup!!.name, renameGroupName)
                                 showRenameDialog = false
                             }
                         }
@@ -142,8 +146,8 @@ fun GroupManagementScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (renameGroupName.value.isNotBlank() && !groupRepository.groupExists(renameGroupName.value)) {
-                            groupRepository.updateGroup(editingGroup!!.name, renameGroupName.value)
+                        if (renameGroupName.isNotBlank() && !groupRepository.groupExists(renameGroupName)) {
+                            groupRepository.updateGroup(editingGroup!!.name, renameGroupName)
                             showRenameDialog = false
                         }
                     }
