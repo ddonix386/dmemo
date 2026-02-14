@@ -28,6 +28,8 @@ fun GroupManagementScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
     var renameGroupName by remember { mutableStateOf("") }
+    var groupToDelete by remember { mutableStateOf<MemoGroup?>(null) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -60,7 +62,16 @@ fun GroupManagementScreen(
                             renameGroupName = group.name
                             showRenameDialog = true
                         },
-                        onDelete = { if (group.name != "默认") groupRepository.deleteGroup(group.name) }
+                        onDelete = {
+                            if (group.name != "默认") {
+                                if (groupRepository.hasMemosInGroup(group.name)) {
+                                    groupToDelete = group
+                                    showDeleteConfirmDialog = true
+                                } else {
+                                    groupRepository.deleteGroup(group.name)
+                                }
+                            }
+                        }
                     )
                 }
             }
@@ -157,6 +168,36 @@ fun GroupManagementScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showRenameDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 删除分组确认对话框
+    if (showDeleteConfirmDialog && groupToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = { Text("确认删除") },
+            text = {
+                Column {
+                    Text("分组 '${groupToDelete!!.name}' 下有备忘录。")
+                    Text("如果删除该分组，所有相关备忘录也将被删除。")
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        groupRepository.deleteGroupAndMemos(groupToDelete!!.name)
+                        groupToDelete = null
+                        showDeleteConfirmDialog = false
+                    }
+                ) {
+                    Text("确定删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
                     Text("取消")
                 }
             }

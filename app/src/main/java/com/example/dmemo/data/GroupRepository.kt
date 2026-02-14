@@ -25,6 +25,7 @@ data class MemoGroup(
 
 class GroupRepository(private val context: Context) {
     private val groupFile = File(context.filesDir, "groups.txt")
+    private val memoFile = File(context.filesDir, "memos.txt")
     
     var groups by mutableStateOf<List<MemoGroup>>(emptyList())
         private set
@@ -73,8 +74,38 @@ class GroupRepository(private val context: Context) {
         }
     }
     
+    fun hasMemosInGroup(groupName: String): Boolean {
+        if (!memoFile.exists()) return false
+        return memoFile.readLines(charset = Charsets.UTF_8).any { line ->
+            val parts = line.split("|", limit = 3)
+            parts.getOrNull(1) == groupName
+        }
+    }
+    
     fun deleteGroup(name: String) {
         if (name != "默认") {
+            groups = groups.filter { it.name != name }
+            saveGroups()
+        }
+    }
+    
+    fun deleteGroupAndMemos(name: String) {
+        if (name != "默认") {
+            // 删除该分组下的所有备忘录
+            if (memoFile.exists()) {
+                val lines = memoFile.readLines(charset = Charsets.UTF_8)
+                val filteredLines = lines.filter { line ->
+                    val parts = line.split("|", limit = 3)
+                    parts.getOrNull(1) != name
+                }
+                try {
+                    FileWriter(memoFile, false).use { writer ->
+                        filteredLines.forEach { writer.write(it + "\n") }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
             groups = groups.filter { it.name != name }
             saveGroups()
         }
