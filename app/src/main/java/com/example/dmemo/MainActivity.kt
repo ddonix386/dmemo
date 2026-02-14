@@ -10,7 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.input.pointer.pointerInput
 import com.example.dmemo.data.GroupRepository
 import com.example.dmemo.data.GroupType
 import com.example.dmemo.ui.screens.GroupManagementScreen
@@ -326,6 +326,7 @@ fun MainScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MemoItem(
     memo: MemoItemData,
@@ -334,29 +335,13 @@ fun MemoItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    var clicked by remember { mutableStateOf(false) }
-    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .pointerInput(memo.id) {
-                detectTapGestures(
-                    onTap = { clicked = true },
-                    onLongPress = {
-                        onLongClick()
-                        clicked = false
-                    }
-                )
-            }
-            .clickable(
-                enabled = !isSelecting,
-                onClick = { 
-                    if (!clicked) {
-                        onClick()
-                    }
-                    clicked = false
-                }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 2.dp)
     ) {
