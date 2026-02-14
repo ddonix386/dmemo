@@ -27,8 +27,7 @@ data class MemoGroup(
 
 // 分组数据类型
 enum class GroupType(val value: String, val label: String) {
-    TEXT("text", "纯文本"),
-    MARKDOWN("markdown", "Markdown"),
+    TEXT("text", "文本"),
     NUMBER("number", "数字");
 
     companion object {

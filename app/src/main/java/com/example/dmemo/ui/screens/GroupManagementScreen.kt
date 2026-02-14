@@ -118,14 +118,17 @@ fun GroupManagementScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("数据类型：")
                     Row {
-                        GroupType.values().forEach { type ->
-                            FilterChip(
-                                selected = newGroupType == type,
-                                onClick = { newGroupType = type },
-                                label = { Text(type.label) }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
+                        FilterChip(
+                            selected = newGroupType == GroupType.TEXT,
+                            onClick = { newGroupType = GroupType.TEXT },
+                            label = { Text("文本") }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        FilterChip(
+                            selected = newGroupType == GroupType.NUMBER,
+                            onClick = { newGroupType = GroupType.NUMBER },
+                            label = { Text("数字") }
+                        )
                     }
                 }
             },
