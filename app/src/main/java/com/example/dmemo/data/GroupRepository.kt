@@ -10,15 +10,30 @@ import java.util.*
 // 分组数据类
 data class MemoGroup(
     val name: String,
+    val type: GroupType = GroupType.TEXT,
     val color: Int = 0xFFE0E0E0.toInt()
 ) {
     companion object {
         fun fromString(line: String): MemoGroup {
-            val parts = line.split("|", limit = 2)
+            val parts = line.split("|", limit = 3)
             return MemoGroup(
                 name = parts.getOrNull(0) ?: "默认",
-                color = parts.getOrNull(1)?.toIntOrNull() ?: 0xFFE0E0E0.toInt()
+                type = GroupType.fromString(parts.getOrNull(1) ?: "text"),
+                color = parts.getOrNull(2)?.toIntOrNull() ?: 0xFFE0E0E0.toInt()
             )
+        }
+    }
+}
+
+// 分组数据类型
+enum class GroupType(val value: String, val label: String) {
+    TEXT("text", "纯文本"),
+    MARKDOWN("markdown", "Markdown"),
+    NUMBER("number", "数字");
+
+    companion object {
+        fun fromString(value: String): GroupType {
+            return values().firstOrNull { it.value == value } ?: TEXT
         }
     }
 }
@@ -42,11 +57,11 @@ class GroupRepository(private val context: Context) {
         } else {
             // 默认分组
             listOf(
-                MemoGroup("默认", 0xFFE0E0E0.toInt()),
-                MemoGroup("工作", 0xFFBBDEFB.toInt()),
-                MemoGroup("生活", 0xFFC8E6C9.toInt()),
-                MemoGroup("学习", 0xFFF0F4C3.toInt()),
-                MemoGroup("购物", 0xFFFFCDD2.toInt())
+                MemoGroup("默认", type = GroupType.TEXT, color = 0xFFE0E0E0.toInt()),
+                MemoGroup("工作", type = GroupType.TEXT, color = 0xFFBBDEFB.toInt()),
+                MemoGroup("生活", type = GroupType.TEXT, color = 0xFFC8E6C9.toInt()),
+                MemoGroup("学习", type = GroupType.TEXT, color = 0xFFF0F4C3.toInt()),
+                MemoGroup("购物", type = GroupType.TEXT, color = 0xFFFFCDD2.toInt())
             )
         }
     }
@@ -55,7 +70,7 @@ class GroupRepository(private val context: Context) {
         try {
             FileWriter(groupFile, false).use { writer ->
                 groups.forEach { group ->
-                    writer.write("${group.name}|${group.color}\n")
+                    writer.write("${group.name}|${group.type.value}|${group.color}\n")
                 }
             }
         } catch (e: Exception) {
@@ -67,9 +82,9 @@ class GroupRepository(private val context: Context) {
         return groups.any { it.name.equals(name, ignoreCase = true) }
     }
     
-    fun addGroup(name: String) {
+    fun addGroup(name: String, type: GroupType = GroupType.TEXT) {
         if (name.isNotBlank() && !groupExists(name)) {
-            groups = groups + MemoGroup(name)
+            groups = groups + MemoGroup(name, type = type)
             saveGroups()
         }
     }

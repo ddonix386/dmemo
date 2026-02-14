@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.dmemo.data.GroupRepository
+import com.example.dmemo.data.GroupType
 import com.example.dmemo.data.MemoGroup
 
 @Composable
@@ -24,6 +25,7 @@ fun GroupManagementScreen(
     groupRepository: GroupRepository
 ) {
     var newGroupName by remember { mutableStateOf("") }
+    var newGroupType by remember { mutableStateOf(GroupType.TEXT) }
     var editingGroup by remember { mutableStateOf<MemoGroup?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -94,29 +96,46 @@ fun GroupManagementScreen(
             onDismissRequest = { showAddDialog = false },
             title = { Text("添加分组") },
             text = {
-                TextField(
-                    value = newGroupName,
-                    onValueChange = { newGroupName = it },
-                    label = { Text("分组名称") },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            if (newGroupName.isNotBlank() && !groupRepository.groupExists(newGroupName)) {
-                                groupRepository.addGroup(newGroupName)
-                                newGroupName = ""
-                                showAddDialog = false
+                Column {
+                    TextField(
+                        value = newGroupName,
+                        onValueChange = { newGroupName = it },
+                        label = { Text("分组名称") },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                if (newGroupName.isNotBlank() && !groupRepository.groupExists(newGroupName)) {
+                                    groupRepository.addGroup(newGroupName, newGroupType)
+                                    newGroupName = ""
+                                    newGroupType = GroupType.TEXT
+                                    showAddDialog = false
+                                }
                             }
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("数据类型：")
+                    Row {
+                        GroupType.values().forEach { type ->
+                            FilterChip(
+                                selected = newGroupType == type,
+                                onClick = { newGroupType = type },
+                                label = { Text(type.label) }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
-                    ),
-                    singleLine = true
-                )
+                    }
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         if (newGroupName.isNotBlank() && !groupRepository.groupExists(newGroupName)) {
-                            groupRepository.addGroup(newGroupName)
+                            groupRepository.addGroup(newGroupName, newGroupType)
                             newGroupName = ""
+                            newGroupType = GroupType.TEXT
                             showAddDialog = false
                         }
                     }
