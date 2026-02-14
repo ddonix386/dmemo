@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.example.dmemo.data.GroupRepository
+import com.example.dmemo.ui.screens.GroupManagementScreen
 import com.example.dmemo.ui.theme.DmemoTheme
 import java.io.*
 import java.text.SimpleDateFormat
@@ -35,12 +37,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// 分组数据类
-data class MemoGroup(
-    val name: String,
-    val color: Int
-)
-
 // 备忘录数据类
 data class MemoItemData(
     val id: Long,
@@ -52,20 +48,36 @@ data class MemoItemData(
 @Composable
 fun DmemoApp() {
     val context = LocalContext.current
+    val groupRepository = remember { GroupRepository(context) }
     
-    // 分组列表（可扩展）
-    val groups = listOf(
-        MemoGroup("默认", 0xFFE0E0E0.toInt()),
-        MemoGroup("工作", 0xFFBBDEFB.toInt()),
-        MemoGroup("生活", 0xFFC8E6C9.toInt()),
-        MemoGroup("学习", 0xFFF0F4C3.toInt()),
-        MemoGroup("购物", 0xFFFFCDD2.toInt())
-    )
+    var currentScreen by remember { mutableStateOf("main") }
+    
+    when (currentScreen) {
+        "main" -> MainScreen(
+            modifier = Modifier.fillMaxSize(),
+            groupRepository = groupRepository,
+            onNavigateToGroups = { currentScreen = "groups" }
+        )
+        "groups" -> GroupManagementScreen(
+            modifier = Modifier.fillMaxSize(),
+            onNavigateBack = { currentScreen = "main" },
+            groupRepository = groupRepository
+        )
+    }
+}
+
+@Composable
+fun MainScreen(
+    modifier: Modifier = Modifier,
+    groupRepository: GroupRepository,
+    onNavigateToGroups: () -> Unit
+) {
+    val context = LocalContext.current
     
     // 使用 mutableStateOf 来存储备忘录列表
     val memos = remember { mutableStateListOf<MemoItemData>() }
     var newMemoText by remember { mutableStateOf("") }
-    var selectedGroup by remember { mutableStateOf(groups[0].name) } // 默认分组
+    var selectedGroup by remember { mutableStateOf(groupRepository.groups.firstOrNull()?.name ?: "默认") }
     var showNewestFirst by remember { mutableStateOf(true) }
     var isSelecting by remember { mutableStateOf(false) }
     val selectedIndexes = remember { mutableStateListOf<Int>() }
@@ -129,11 +141,19 @@ fun DmemoApp() {
     }
     
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
             .padding(top = 72.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
     ) {
-        Text("冬冬备忘", style = MaterialTheme.typography.headlineMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("冬冬备忘", style = MaterialTheme.typography.headlineMedium)
+            TextButton(onClick = onNavigateToGroups) {
+                Text("分组管理")
+            }
+        }
         Spacer(modifier = Modifier.height(16.dp))
         
         // 选择模式的操作栏
@@ -184,7 +204,7 @@ fun DmemoApp() {
                     expanded = dropdownExpanded,
                     onDismissRequest = { dropdownExpanded = false }
                 ) {
-                    groups.forEach { group ->
+                    groupRepository.groups.forEach { group ->
                         DropdownMenuItem(
                             text = { Text(group.name) },
                             onClick = {
